@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">KidLock</string>
+    <string name="admin_label">KidLock device policy</string>
+    <string name="admin_description">Keeps airplane mode on and pins approved apps.</string>
+</resources>

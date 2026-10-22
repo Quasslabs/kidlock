@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Padlock with a play button: same artwork as docs/icon.svg. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M41,52 V42 a13,13 0 0 1 26,0 V52"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="7" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,48 H70 A6,6 0 0 1 76,54 V76 A6,6 0 0 1 70,82 H38 A6,6 0 0 1 32,76 V54 A6,6 0 0 1 38,48 Z" />
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M49,57 L49,73 L62,65 Z" />
+</vector>
