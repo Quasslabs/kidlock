@@ -92,17 +92,36 @@
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/airplaneStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp" />
+                android:layout_marginTop="16dp"
+                android:text="Mode"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/modeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <RadioButton
+                    android:id="@+id/modeTotal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Total lockdown: no calls, no texts, no SIM. A streaming-only device." />
+
+                <RadioButton
+                    android:id="@+id/modeLight"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Light: still a working phone. Pinned sessions plus anti-tamper only." />
+            </RadioGroup>
 
             <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/airplaneSwitch"
+                android:id="@+id/debugSwitch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Lock airplane mode" />
+                android:text="Block developer options and USB debugging (turn off before installing updates)" />
 
             <TextView
                 android:layout_width="match_parent"

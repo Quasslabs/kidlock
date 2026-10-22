@@ -6,6 +6,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -25,8 +26,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settingsSection: View
     private lateinit var appButtons: LinearLayout
     private lateinit var appChecks: LinearLayout
-    private lateinit var airplaneStatus: TextView
-    private lateinit var airplaneSwitch: SwitchCompat
+    private lateinit var modeTotal: RadioButton
+    private lateinit var modeLight: RadioButton
+    private lateinit var debugSwitch: SwitchCompat
     private lateinit var pinField: EditText
     private lateinit var pinConfirmField: EditText
 
@@ -42,8 +44,9 @@ class MainActivity : AppCompatActivity() {
         settingsSection = findViewById(R.id.settingsSection)
         appButtons = findViewById(R.id.appButtons)
         appChecks = findViewById(R.id.appChecks)
-        airplaneStatus = findViewById(R.id.airplaneStatus)
-        airplaneSwitch = findViewById(R.id.airplaneSwitch)
+        modeTotal = findViewById(R.id.modeTotal)
+        modeLight = findViewById(R.id.modeLight)
+        debugSwitch = findViewById(R.id.debugSwitch)
         pinField = findViewById(R.id.pinField)
         pinConfirmField = findViewById(R.id.pinConfirmField)
 
@@ -102,16 +105,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderSettings() {
         val prefs = KidLock.prefs(this)
-        val airplaneOn = KidLock.isAirplaneModeOn(this)
-        airplaneStatus.text = buildString {
-            append("Airplane mode is currently ")
-            append(if (airplaneOn) "ON." else "OFF. Turn it ON in quick settings before locking it.")
-            if (!KidLock.airplaneLockSupported) {
-                append("\nThis Android version cannot lock airplane mode (needs Android 9+).")
-            }
+        when (KidLock.mode(this)) {
+            Mode.TOTAL -> modeTotal.isChecked = true
+            Mode.LIGHT -> modeLight.isChecked = true
         }
-        airplaneSwitch.isEnabled = KidLock.airplaneLockSupported
-        airplaneSwitch.isChecked = prefs.getBoolean(KidLock.KEY_AIRPLANE_LOCK, false)
+        debugSwitch.isChecked = prefs.getBoolean(KidLock.KEY_BLOCK_DEBUGGING, true)
 
         appChecks.removeAllViews()
         checkBoxes.clear()
@@ -135,16 +133,11 @@ class MainActivity : AppCompatActivity() {
             pin != confirm -> return toast("PINs do not match")
         }
 
-        val lockAirplane = airplaneSwitch.isChecked
-        if (lockAirplane && !KidLock.isAirplaneModeOn(this)) {
-            // Locking now would freeze airplane mode OFF, the opposite of what we want.
-            return toast("Turn airplane mode ON first, then apply")
-        }
-
         if (pin.isNotEmpty()) KidLock.setPin(this, pin)
+        KidLock.setMode(this, if (modeLight.isChecked) Mode.LIGHT else Mode.TOTAL)
         val selected = checkBoxes.filterValues { it.isChecked }.keys
         KidLock.prefs(this).edit()
-            .putBoolean(KidLock.KEY_AIRPLANE_LOCK, lockAirplane)
+            .putBoolean(KidLock.KEY_BLOCK_DEBUGGING, debugSwitch.isChecked)
             .putStringSet(KidLock.KEY_PACKAGES, selected)
             .apply()
         KidLock.applyPolicies(this)
@@ -159,7 +152,7 @@ class MainActivity : AppCompatActivity() {
     private fun confirmRemoveOwner() {
         AlertDialog.Builder(this)
             .setTitle("Remove Device Owner?")
-            .setMessage("This clears the airplane lock and app pinning. KidLock can then be uninstalled normally.")
+            .setMessage("This clears every restriction and app pinning. KidLock can then be uninstalled normally.")
             .setPositiveButton("Remove") { _, _ ->
                 KidLock.releaseDeviceOwner(this)
                 toast("Device Owner removed")

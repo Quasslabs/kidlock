@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Lock task mode and user restrictions are Device Owner powers and need no
-    policy tag here; these are the classic device-admin policies only.
+    policy tag here. None of the classic device-admin policies are used.
 -->
 <device-admin xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-policies>
-        <limit-password />
-        <force-lock />
-        <wipe-data />
-    </uses-policies>
+    <uses-policies />
 </device-admin>

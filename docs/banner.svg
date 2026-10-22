@@ -11,7 +11,7 @@
 
   <g font-family="'Space Grotesk', 'Segoe UI', Helvetica, Arial, sans-serif">
     <text x="520" y="290" font-size="104" font-weight="700" fill="#e2e8f0">KidLock</text>
-    <text x="524" y="352" font-size="30" fill="#94a3b8">Airplane mode locked on. Approved apps pinned.</text>
+    <text x="524" y="352" font-size="30" fill="#94a3b8">Approved apps pinned. No calls, texts, or SIM.</text>
     <text x="524" y="394" font-size="30" fill="#94a3b8">A PIN to get out.</text>
     <text x="524" y="470" font-size="22" fill="#38bdf8">Android Device Owner app  ·  MIT  ·  QuassLabs</text>
   </g>

@@ -2,12 +2,55 @@
 
 ![KidLock](docs/banner.svg)
 
-A small Device Owner app for a child's phone. It does two things:
+An Android Device Owner app that turns a spare phone into a locked-down device for a child. It does two jobs:
 
-1. **Keeps airplane mode locked ON** so the child cannot turn the radios back on.
-2. **Pins approved apps** (YouTube Kids, Netflix, Prime Video, Disney+) in lock task mode, so the child cannot leave the app. A PIN-protected **Done** button ends the session.
+1. **Pins approved apps** (YouTube Kids, Netflix, Prime Video, Disney+) in lock task mode, so the child cannot leave the app. A PIN-protected **Done** button ends the session.
+2. **Takes away the phone part of the phone**, in **Total lockdown** mode: no calls, no texts, no SIM. Wi-Fi keeps working, because the streaming apps need it.
 
-Kotlin, standard Views, `androidx.appcompat` only. No network, no analytics. minSdk 26, targetSdk 34.
+Kotlin, standard Views, `androidx.appcompat` only. No network code, no analytics. minSdk 26, targetSdk 34.
+
+## Two modes
+
+KidLock ships with **Total lockdown** as the default. **Light** is one tap away in Parent settings.
+
+| | Total lockdown (default) | Light |
+|---|---|---|
+| Pinned app sessions with PIN exit | Yes | Yes |
+| Factory reset, safe mode, new users, clock changes | Blocked | Blocked |
+| Developer options and USB debugging | Blocked (switchable) | Blocked (switchable) |
+| Outgoing calls | Blocked | Allowed |
+| Text messages | Blocked | Allowed |
+| SIM cards and eSIM (Android 15+) | Blocked | Allowed |
+| Mobile network settings | Locked | Allowed |
+| Emergency calls | Still work | Still work |
+
+### When to use Total lockdown
+
+The phone is a **streaming device**, not a phone. Typical case: an old phone handed to a young child for shows in the car, on a plane, or at bedtime.
+
+- Nothing to call, text, or sign up for, and no mobile data bill.
+- Pull the SIM as well. On Android 15+ KidLock also blocks SIMs outright, so putting one back in does nothing. On older versions, blocked calls and texts still apply even if a SIM is inserted.
+- Wi-Fi is the only connection, so what the child can reach is whatever the allowed apps offer.
+
+### When to use Light
+
+The child **has a real phone** and you want screen-time sessions on top. Typical case: an older child who needs to reach family, using a phone you still want to keep from being wiped or tampered with.
+
+- Calls, texts, and mobile data work normally outside a session.
+- Sessions still pin one app with a PIN to exit, so "you get 30 minutes of YouTube Kids" means exactly that.
+- The anti-tamper protections stay on, so the child cannot factory reset their way out of KidLock.
+
+### Making it lighter still
+
+Both modes keep the anti-tamper set because without it the rest is easy to undo. If you want less than Light, these are the dials, from least to most invasive:
+
+- **Allow USB debugging:** turn off **Block developer options** in Parent settings. You need this anyway to install updates. Leave it off only if nobody in the house will plug the phone into a computer to undo things.
+- **Sessions only, no restrictions at all:** delete the entries you do not want from `BASE_RESTRICTIONS` in `KidLockApp.kt`. Expect the child to be able to factory reset the phone, which removes KidLock entirely.
+- **No Device Owner at all:** use Android's built-in **App pinning** (Settings > Security > App pinning). Any parent can turn it on in a minute with no computer and no reset. The catches: the child sees a "pin this app?" prompt, unpinning is guarded by the phone's own lock screen PIN rather than a separate one, and nothing else is restricted. That is the right answer if all you want is "stay in this one app for a while."
+
+## Why not airplane mode?
+
+Locking airplane mode ON was the original idea. Android cannot do it: the only related Device Owner control, `DISALLOW_AIRPLANE_MODE`, **forces airplane mode off** and keeps it off. We confirmed this on Android 16, where applying it switched the cellular radio back on in the same instant. No public API lets an app turn airplane mode on. Blocking calls, texts, and SIMs reaches the same goal and leaves Wi-Fi alone.
 
 ## Build
 
@@ -19,7 +62,7 @@ The APK lands at `app/build/outputs/apk/debug/app-debug.apk`. Android Studio can
 
 ## Setup
 
-Device Owner can only be set on a phone with **no accounts** on it. Either factory reset and skip Google sign-in, or remove every account under Settings > Accounts before step 2. You can add accounts back (for example inside YouTube Kids) afterwards.
+Device Owner can only be set on a phone with **no accounts** on it. Either factory reset and skip Google sign-in, or remove every account under Settings > Accounts before step 2. You can sign in inside the streaming apps afterwards.
 
 1. Enable Developer options and USB debugging on the phone, then install the APK:
    ```bash
@@ -29,40 +72,46 @@ Device Owner can only be set on a phone with **no accounts** on it. Either facto
    ```bash
    adb shell dpm set-device-owner com.quasslabs.kidlock/.AdminReceiver
    ```
-3. Turn airplane mode **ON** from quick settings. KidLock cannot switch it on by itself (Android does not let third-party apps change that setting), it can only lock the toggle in whatever position it is in. The app refuses to lock it while it is off.
-4. Open KidLock, set a PIN, turn on **Lock airplane mode**, check the allowed apps, and tap **Apply**.
-5. Pull the SIM card.
-6. Optionally turn USB debugging back off, so the phone cannot be reconfigured over ADB.
-7. Hand it to your child.
+3. Connect the phone to your Wi-Fi.
+4. Open KidLock, pick a mode, check the allowed apps, set a PIN, and tap **Apply**. With **Block developer options** on (the default), ADB disconnects the moment you tap Apply. That is intended: it stops anyone from reconfiguring the phone over USB.
+5. For Total lockdown, pull the SIM card.
+6. Hand it over.
+
+To install an update later: enter **Parent settings**, turn off **Block developer options**, tap **Apply**, re-enable USB debugging, and run `adb install -r` with the new APK. Updates must be signed with the same key as the installed build, so build them on the same computer or set up a release signing key.
 
 ## Daily use
 
 - Open KidLock: it shows a button for each allowed app that is installed.
-- Tapping one starts a locked session. Home and Recents do nothing; the child stays in that app.
+- Tapping one starts a locked session. Home, Recents, and the power menu are disabled; the child stays in that app.
 - Backing out of the app lands on the KidLock lock screen, with **Back to app** and **Done ✓**.
 - **Done ✓** asks for the PIN, then ends the session.
 - **Parent settings** on the main screen also asks for the PIN.
+- After 5 wrong PINs, entry locks for 30 seconds, doubling with each further miss up to an hour.
 
 ## How it works
 
 | Piece | What it does |
 |---|---|
 | `AdminReceiver` | The `DeviceAdminReceiver` that becomes Device Owner. No logic. |
-| `KidLockApp.kt` | Application class plus the `KidLock` helper: the app catalog, policy calls, and salted SHA-256 PIN storage in SharedPreferences. |
+| `KidLockApp.kt` | Application class plus the `KidLock` helper: the app catalog, the two restriction sets, and salted SHA-256 PIN storage with lockout in SharedPreferences. |
 | `MainActivity` | Shows the ADB command if not Device Owner, otherwise the kid launcher or the PIN-gated parent settings. |
 | `LockActivity` | Root of every locked session. Declared `lockTaskMode="if_whitelisted"` and `singleInstance`, so it enters lock task mode on launch, then starts the chosen app on top of itself. |
 | `BootReceiver` | Re-applies the saved policy after a reboot. Device Owner policy already persists; this is a safety net. |
 
 Policy calls:
 
-- Airplane lock: `addUserRestriction(admin, UserManager.DISALLOW_AIRPLANE_MODE)`
-- App allowlist: `setLockTaskPackages(admin, selected + KidLock's own package)`
+- App allowlist: `setLockTaskPackages(admin, selected apps + KidLock itself)`
+- No power menu, Home, or Recents in a session: `setLockTaskFeatures(admin, LOCK_TASK_FEATURE_NONE)`, called after `setLockTaskPackages` because on Android 14+ that call resets the features
+- Both modes: `DISALLOW_FACTORY_RESET`, `DISALLOW_SAFE_BOOT`, `DISALLOW_ADD_USER`, `DISALLOW_CONFIG_DATE_TIME` (the PIN lockout relies on the clock)
+- Total lockdown adds: `DISALLOW_OUTGOING_CALLS`, `DISALLOW_SMS`, `DISALLOW_CONFIG_MOBILE_NETWORKS`, and `DISALLOW_SIM_GLOBALLY` on Android 15+
+- On by default, switchable: `DISALLOW_DEBUGGING_FEATURES`
 
 ## Limitations worth knowing
 
-- **Android 9+ for the airplane lock.** `DISALLOW_AIRPLANE_MODE` was added in API 28. On Android 8.x the app still installs and app pinning still works, but the toggle stays disabled.
-- **Emergency calls.** Android lets the emergency dialer bypass airplane mode on many devices, and emergency calls work without a SIM. Neither KidLock nor any other third-party app can disable that.
-- **Outside a session the phone is a normal phone.** Lock task only applies while an app is pinned. The airplane restriction is always on, but the child can open other installed apps from the home screen. Uninstall or disable apps you do not want reachable.
+- **Emergency calls always work.** Android lets them through without a SIM and regardless of any restriction. No app can change that, and KidLock does not try.
+- **Outside a session the phone is a normal phone, minus the restrictions above.** Lock task only applies while an app is pinned. Between sessions the child can open other installed apps and most of Settings, including Wi-Fi. Uninstall or disable apps you do not want reachable.
+- **A forced reboot ends the session.** Holding the power button long enough still restarts most phones, and the phone comes back up outside lock task. The restrictions survive the reboot; the pinned session does not.
+- **Recovery mode.** `DISALLOW_FACTORY_RESET` blocks the reset in Settings. A reset from the recovery menu cannot be blocked by any app; it also removes KidLock along with everything else.
 - **No floating overlay.** The Done button lives on the KidLock lock screen behind the pinned app, reached with Back, instead of floating over it. A floating button would need the "Display over other apps" permission plus a foreground service, which Device Owner cannot grant automatically.
 - **Adding apps.** The catalog is hardcoded in `KidLock.CATALOG` in `KidLockApp.kt`. A new entry also needs a `<package>` line in the manifest's `<queries>` block so Android 11+ lets KidLock see it.
 
@@ -70,15 +119,15 @@ Policy calls:
 
 A Device Owner app cannot be uninstalled until it gives up Device Owner.
 
-1. Open KidLock, enter **Parent settings**, tap **Remove Device Owner**. This clears the airplane lock and the lock task allowlist, then calls `clearDeviceOwnerApp`.
+1. Open KidLock, enter **Parent settings**, tap **Remove Device Owner**. This clears every restriction and the lock task allowlist, then calls `clearDeviceOwnerApp`.
 2. Uninstall normally, or with:
    ```bash
    adb uninstall com.quasslabs.kidlock
    ```
 
-`adb shell dpm remove-active-admin com.quasslabs.kidlock/.AdminReceiver` also works for clearing the remaining admin, but on most builds it refuses to remove a Device Owner unless the APK was installed as test-only. Use the in-app button first.
+`adb shell dpm remove-active-admin com.quasslabs.kidlock/.AdminReceiver` also exists, but on most builds it refuses to remove a Device Owner unless the APK was installed as test-only. Use the in-app button.
 
-If you lose the PIN: factory reset the phone.
+If you lose the PIN: factory reset the phone from recovery mode.
 
 ## License
 

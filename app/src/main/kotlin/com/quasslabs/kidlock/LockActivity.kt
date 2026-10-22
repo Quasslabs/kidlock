@@ -48,7 +48,12 @@ class LockActivity : AppCompatActivity() {
         super.onResume()
         val am = getSystemService(ActivityManager::class.java)
         if (am.lockTaskModeState == ActivityManager.LOCK_TASK_MODE_NONE) {
-            // Fallback: if the allowlist was not applied, this shows the system screen-pinning prompt.
+            if (!KidLock.dpm(this).isLockTaskPermitted(packageName)) {
+                // Without the allowlist, startLockTask() would show the screen-pinning prompt on every resume.
+                Toast.makeText(this, "Open KidLock settings and tap Apply first", Toast.LENGTH_LONG).show()
+                finish()
+                return
+            }
             startLockTask()
         }
         if (!launched) {
