@@ -28,7 +28,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Remove every account from this phone (Settings &gt; Accounts), enable USB debugging, connect it to a computer, and run:" />
+                android:text="Temporarily sign out of every account on this phone (Settings &gt; Accounts). Nothing is deleted, and no factory reset is needed. Then enable USB debugging, connect to a computer, and run:" />
 
             <TextView
                 android:id="@+id/adbCommand"
@@ -42,7 +42,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:text="Then reopen KidLock." />
+                android:text="Then reopen KidLock. You can sign back in to your accounts right away." />
         </LinearLayout>
 
         <!-- Kid launcher -->

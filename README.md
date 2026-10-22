@@ -29,7 +29,7 @@ KidLock ships with **Total lockdown** as the default. **Light** is one tap away 
 **What it is:** the phone becomes a streaming device, not a phone. Best for a spare phone handed to a young child for shows in the car, on a plane, or at bedtime.
 
 **Requirements**
-- Device Owner setup: a computer with ADB, and a phone with no accounts on it (usually a factory reset). See [Setup](#setup).
+- Device Owner setup: a computer with ADB, and a few minutes with every account signed out. No factory reset needed on most phones; you sign back in afterwards. See [Setup](#setup).
 - Wi-Fi, since that is the only connection the streaming apps will have.
 - Pull the SIM.
 
@@ -84,7 +84,18 @@ The APK lands at `app/build/outputs/apk/debug/app-debug.apk`. Android Studio can
 
 ## Setup
 
-Device Owner can only be set on a phone with **no accounts** on it. Either factory reset and skip Google sign-in, or remove every account under Settings > Accounts before step 2. You can sign in inside the streaming apps afterwards.
+### Before you start: sign out, then sign back in
+
+Android only lets an app become Device Owner while **no accounts are signed in** on the phone. That rule applies only at the moment you run the setup command, so this is a temporary sign-out, not a wipe:
+
+1. **Sign out.** Go to Settings > Accounts (sometimes "Passwords & accounts") and remove every account: Google, Samsung, email, and so on. Your apps, photos, and files stay on the phone.
+2. **Delete any extra users.** If the phone has a second user or a guest profile, remove it under Settings > System > Users. Only the main user can remain.
+3. **Run the setup below.**
+4. **Sign back in.** Add your accounts again under Settings > Accounts, or sign in inside the streaming apps. KidLock does not block this.
+
+**When you do need a factory reset:** only if an account refuses to be removed. Some carrier or manufacturer accounts are locked in. On those phones, factory reset, skip every sign-in screen during setup, run the steps below, then sign in. A freshly reset spare phone is also the easiest start if you have one, but it is not required.
+
+### Steps
 
 1. Enable Developer options and USB debugging on the phone, then install the APK:
    ```bash
