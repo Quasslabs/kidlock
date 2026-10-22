@@ -11,7 +11,7 @@ Kotlin, standard Views, `androidx.appcompat` only. No network code, no analytics
 
 ## Two modes
 
-KidLock ships with **Total lockdown** as the default. **Light** is one tap away in Parent settings.
+KidLock ships with **Total lockdown** as the default. **Light** is one tap away in Parent settings. If neither fits, there is also a no-install option below.
 
 | | Total lockdown (default) | Light |
 |---|---|---|
@@ -24,29 +24,51 @@ KidLock ships with **Total lockdown** as the default. **Light** is one tap away 
 | Mobile network settings | Locked | Allowed |
 | Emergency calls | Still work | Still work |
 
-### When to use Total lockdown
+### Total lockdown
 
-The phone is a **streaming device**, not a phone. Typical case: an old phone handed to a young child for shows in the car, on a plane, or at bedtime.
+**What it is:** the phone becomes a streaming device, not a phone. Best for a spare phone handed to a young child for shows in the car, on a plane, or at bedtime.
 
-- Nothing to call, text, or sign up for, and no mobile data bill.
-- Pull the SIM as well. On Android 15+ KidLock also blocks SIMs outright, so putting one back in does nothing. On older versions, blocked calls and texts still apply even if a SIM is inserted.
-- Wi-Fi is the only connection, so what the child can reach is whatever the allowed apps offer.
+**Requirements**
+- Device Owner setup: a computer with ADB, and a phone with no accounts on it (usually a factory reset). See [Setup](#setup).
+- Wi-Fi, since that is the only connection the streaming apps will have.
+- Pull the SIM.
 
-### When to use Light
+**Limitations**
+- SIM blocking needs Android 15+. On older phones, calls and texts are still blocked with a SIM inserted, but mobile data would work, so pull the SIM.
+- Emergency calls always work. No app can block them.
+- Between sessions the child can open other installed apps and most of Settings. Uninstall what you do not want reachable.
+- A forced reboot (holding the power button) ends a session. The restrictions survive it; the pinned session does not.
 
-The child **has a real phone** and you want screen-time sessions on top. Typical case: an older child who needs to reach family, using a phone you still want to keep from being wiped or tampered with.
+### Light
 
-- Calls, texts, and mobile data work normally outside a session.
-- Sessions still pin one app with a PIN to exit, so "you get 30 minutes of YouTube Kids" means exactly that.
-- The anti-tamper protections stay on, so the child cannot factory reset their way out of KidLock.
+**What it is:** the phone stays a working phone, with screen-time sessions on top. Best for an older child who needs to reach family, on a phone you still want protected from being wiped.
 
-### Making it lighter still
+**Requirements**
+- The same Device Owner setup as Total lockdown. Light is a setting, not a lighter install.
+- The SIM stays in.
 
-Both modes keep the anti-tamper set because without it the rest is easy to undo. If you want less than Light, these are the dials, from least to most invasive:
+**Limitations**
+- Calls, texts, and mobile data all work outside a session.
+- Airplane mode is up to the child. You can switch it on, but they can switch it off; Android has no way to lock it on (see [Why not airplane mode?](#why-not-airplane-mode)).
+- Emergency calls, other apps between sessions, and forced reboots behave the same as in Total lockdown.
 
-- **Allow USB debugging:** turn off **Block developer options** in Parent settings. You need this anyway to install updates. Leave it off only if nobody in the house will plug the phone into a computer to undo things.
-- **Sessions only, no restrictions at all:** delete the entries you do not want from `BASE_RESTRICTIONS` in `KidLockApp.kt`. Expect the child to be able to factory reset the phone, which removes KidLock entirely.
-- **No Device Owner at all:** use Android's built-in **App pinning** (Settings > Security > App pinning). Any parent can turn it on in a minute with no computer and no reset. The catches: the child sees a "pin this app?" prompt, unpinning is guarded by the phone's own lock screen PIN rather than a separate one, and nothing else is restricted. That is the right answer if all you want is "stay in this one app for a while."
+### Lighter than Light: no KidLock at all
+
+**What it is:** Android's built-in **App pinning** (Settings > Security > App pinning). It keeps the child in one app until it is unpinned.
+
+**Requirements:** none. No computer, no reset, about a minute to turn on.
+
+**Limitations**
+- The child sees a "pin this app?" prompt each time.
+- Unpinning uses the phone's own lock screen PIN, not a separate parent PIN.
+- Nothing else is restricted: no call or text blocking, and no protection against a factory reset.
+
+This is the right choice if all you want is "stay in this one app for a while."
+
+### Fine-tuning
+
+- **USB debugging:** **Block developer options** in Parent settings is on by default in both modes. Turn it off to install updates.
+- **Fewer protections:** the anti-tamper set lives in `BASE_RESTRICTIONS` in `KidLockApp.kt`. Removing entries is possible, but without the factory reset block the child can wipe the phone and remove KidLock entirely.
 
 ## Why not airplane mode?
 
