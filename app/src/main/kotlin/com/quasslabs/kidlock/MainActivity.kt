@@ -1,6 +1,8 @@
 package com.quasslabs.kidlock
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
@@ -31,8 +33,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var debugSwitch: SwitchCompat
     private lateinit var pinField: EditText
     private lateinit var pinConfirmField: EditText
+    private lateinit var launcherSearch: EditText
+    private lateinit var appSearch: EditText
 
     private val checkBoxes = mutableMapOf<String, CheckBox>()
+    private val launchButtons = mutableMapOf<String, Button>()
     private var settingsUnlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,6 +54,10 @@ class MainActivity : AppCompatActivity() {
         debugSwitch = findViewById(R.id.debugSwitch)
         pinField = findViewById(R.id.pinField)
         pinConfirmField = findViewById(R.id.pinConfirmField)
+        launcherSearch = findViewById(R.id.launcherSearch)
+        appSearch = findViewById(R.id.appSearch)
+        launcherSearch.onTextChanged { filter(launchButtons, it) }
+        appSearch.onTextChanged { filter(checkBoxes, it) }
 
         findViewById<TextView>(R.id.adbCommand).text =
             "adb shell dpm set-device-owner $packageName/.AdminReceiver"
@@ -89,18 +98,22 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderLauncher() {
         appButtons.removeAllViews()
+        launchButtons.clear()
         val allowed = KidLock.allowedPackages(this)
-        KidLock.CATALOG
-            .filter { it.packageName in allowed && isInstalled(it.packageName) }
+        KidLock.launchableApps(this)
+            .filter { it.packageName in allowed }
             .forEach { app ->
-                appButtons.addView(Button(this).apply {
+                val button = Button(this).apply {
                     text = app.label
                     setOnClickListener { LockActivity.start(this@MainActivity, app.packageName) }
-                })
+                }
+                launchButtons[app.packageName] = button
+                appButtons.addView(button)
             }
         if (appButtons.childCount == 0) {
             appButtons.addView(TextView(this).apply { text = "No allowed apps are installed." })
         }
+        filter(launchButtons, launcherSearch.text.toString())
     }
 
     private fun renderSettings() {
@@ -114,15 +127,31 @@ class MainActivity : AppCompatActivity() {
         appChecks.removeAllViews()
         checkBoxes.clear()
         val allowed = KidLock.allowedPackages(this)
-        for (app in KidLock.CATALOG) {
+        // Allowed apps first, so the current setup is visible without scrolling through everything.
+        for (app in KidLock.launchableApps(this).sortedBy { it.packageName !in allowed }) {
             val box = CheckBox(this).apply {
-                text = if (isInstalled(app.packageName)) app.label else "${app.label} (not installed)"
+                text = app.label
                 isChecked = app.packageName in allowed
             }
             checkBoxes[app.packageName] = box
             appChecks.addView(box)
         }
+        filter(checkBoxes, appSearch.text.toString())
     }
+
+    /** Hides every view whose label does not contain [query]. */
+    private fun filter(views: Map<String, TextView>, query: String) {
+        val q = query.trim()
+        views.values.forEach {
+            it.visibility = if (it.text.contains(q, ignoreCase = true)) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun EditText.onTextChanged(action: (String) -> Unit) = addTextChangedListener(object : TextWatcher {
+        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+        override fun afterTextChanged(s: Editable?) = action(s.toString())
+    })
 
     private fun apply() {
         val pin = pinField.text.toString()
@@ -161,8 +190,6 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .show()
     }
-
-    private fun isInstalled(pkg: String) = packageManager.getLaunchIntentForPackage(pkg) != null
 
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 }

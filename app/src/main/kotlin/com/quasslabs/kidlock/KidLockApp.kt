@@ -5,6 +5,7 @@ import android.app.Application
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.UserManager
@@ -23,13 +24,6 @@ enum class Mode { TOTAL, LIGHT }
 
 /** Shared policy, PIN, and preference helpers. */
 object KidLock {
-    val CATALOG = listOf(
-        AllowedApp("YouTube Kids", "com.google.android.apps.youtube.kids"),
-        AllowedApp("Netflix", "com.netflix.mediaclient"),
-        AllowedApp("Prime Video", "com.amazon.avod.thirdpartyclient"),
-        AllowedApp("Disney+", "com.disney.disneyplus"),
-    )
-
     private const val PREFS = "kidlock"
     private const val KEY_PIN_HASH = "pin_hash"
     private const val KEY_PIN_SALT = "pin_salt"
@@ -81,6 +75,17 @@ object KidLock {
 
     fun allowedPackages(context: Context): Set<String> =
         prefs(context).getStringSet(KEY_PACKAGES, emptySet()) ?: emptySet()
+
+    /** Every app with a home-screen icon, except KidLock itself, sorted by name. */
+    fun launchableApps(context: Context): List<AllowedApp> {
+        val pm = context.packageManager
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        return pm.queryIntentActivities(home, 0)
+            .map { AllowedApp(it.loadLabel(pm).toString(), it.activityInfo.packageName) }
+            .filter { it.packageName != context.packageName }
+            .distinctBy { it.packageName }
+            .sortedBy { it.label.lowercase() }
+    }
 
     fun applyPolicies(context: Context) {
         if (!isDeviceOwner(context)) return

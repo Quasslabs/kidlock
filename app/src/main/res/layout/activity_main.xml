@@ -60,6 +60,14 @@
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
+            <EditText
+                android:id="@+id/launcherSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Search"
+                android:inputType="text" />
+
             <LinearLayout
                 android:id="@+id/appButtons"
                 android:layout_width="match_parent"
@@ -129,6 +137,18 @@
                 android:layout_marginTop="24dp"
                 android:text="Allowed apps"
                 android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Skip Play Store, Chrome, and Settings: from inside them a child can reach everything else." />
+
+            <EditText
+                android:id="@+id/appSearch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Search apps"
+                android:inputType="text" />
 
             <LinearLayout
                 android:id="@+id/appChecks"

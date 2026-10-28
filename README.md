@@ -4,7 +4,7 @@
 
 An Android Device Owner app that turns a spare phone into a locked-down device for a child. It does two jobs:
 
-1. **Pins approved apps** (YouTube Kids, Netflix, Prime Video, Disney+) in lock task mode, so the child cannot leave the app. A PIN-protected **Done** button ends the session.
+1. **Pins approved apps** (any installed app you tick, such as YouTube Kids or Netflix) in lock task mode, so the child cannot leave the app. A PIN-protected **Done** button ends the session.
 2. **Takes away the phone part of the phone**, in **Total lockdown** mode: no calls, no texts, no SIM. Wi-Fi keeps working, because the streaming apps need it.
 
 Kotlin, standard Views, `androidx.appcompat` only. No network code, no analytics. minSdk 26, targetSdk 34.
@@ -106,7 +106,7 @@ Android only lets an app become Device Owner while **no accounts are signed in**
    adb shell dpm set-device-owner com.quasslabs.kidlock/.AdminReceiver
    ```
 3. Connect the phone to your Wi-Fi.
-4. Open KidLock, pick a mode, check the allowed apps, set a PIN, and tap **Apply**. With **Block developer options** on (the default), ADB disconnects the moment you tap Apply. That is intended: it stops anyone from reconfiguring the phone over USB.
+4. Open KidLock, pick a mode, tick the allowed apps (the search box filters the list), set a PIN, and tap **Apply**. With **Block developer options** on (the default), ADB disconnects the moment you tap Apply. That is intended: it stops anyone from reconfiguring the phone over USB.
 5. For Total lockdown, pull the SIM card.
 6. Hand it over.
 
@@ -114,7 +114,7 @@ To install an update later: enter **Parent settings**, turn off **Block develope
 
 ## Daily use
 
-- Open KidLock: it shows a button for each allowed app that is installed.
+- Open KidLock: it shows a button for each allowed app, with a search box to find one quickly.
 - Tapping one starts a locked session. Home, Recents, and the power menu are disabled; the child stays in that app.
 - Backing out of the app lands on the KidLock lock screen, with **Back to app** and **Done ✓**.
 - **Done ✓** asks for the PIN, then ends the session.
@@ -126,7 +126,7 @@ To install an update later: enter **Parent settings**, turn off **Block develope
 | Piece | What it does |
 |---|---|
 | `AdminReceiver` | The `DeviceAdminReceiver` that becomes Device Owner. No logic. |
-| `KidLockApp.kt` | Application class plus the `KidLock` helper: the app catalog, the two restriction sets, and salted SHA-256 PIN storage with lockout in SharedPreferences. |
+| `KidLockApp.kt` | Application class plus the `KidLock` helper: the list of installed apps, the two restriction sets, and salted SHA-256 PIN storage with lockout in SharedPreferences. |
 | `MainActivity` | Shows the ADB command if not Device Owner, otherwise the kid launcher or the PIN-gated parent settings. |
 | `LockActivity` | Root of every locked session. Declared `lockTaskMode="if_whitelisted"` and `singleInstance`, so it enters lock task mode on launch, then starts the chosen app on top of itself. |
 | `BootReceiver` | Re-applies the saved policy after a reboot. Device Owner policy already persists; this is a safety net. |
@@ -146,7 +146,7 @@ Policy calls:
 - **A forced reboot ends the session.** Holding the power button long enough still restarts most phones, and the phone comes back up outside lock task. The restrictions survive the reboot; the pinned session does not.
 - **Recovery mode.** `DISALLOW_FACTORY_RESET` blocks the reset in Settings. A reset from the recovery menu cannot be blocked by any app; it also removes KidLock along with everything else.
 - **No floating overlay.** The Done button lives on the KidLock lock screen behind the pinned app, reached with Back, instead of floating over it. A floating button would need the "Display over other apps" permission plus a foreground service, which Device Owner cannot grant automatically.
-- **Adding apps.** The catalog is hardcoded in `KidLock.CATALOG` in `KidLockApp.kt`. A new entry also needs a `<package>` line in the manifest's `<queries>` block so Android 11+ lets KidLock see it.
+- **Choose allowed apps carefully.** Any app with a home-screen icon can be allowed. Skip Play Store, Chrome, and Settings: from inside them a child can open almost anything else, and the session would no longer mean much.
 
 ## Removing Device Owner
 

@@ -3,12 +3,12 @@
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- Package visibility (API 30+): lets us find launch intents for the allowed apps. -->
+    <!-- Package visibility (API 30+): lets the parent pick from every app with a home-screen icon. -->
     <queries>
-        <package android:name="com.google.android.apps.youtube.kids" />
-        <package android:name="com.netflix.mediaclient" />
-        <package android:name="com.amazon.avod.thirdpartyclient" />
-        <package android:name="com.disney.disneyplus" />
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
 
     <application
