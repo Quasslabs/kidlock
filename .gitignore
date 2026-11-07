@@ -6,3 +6,18 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+
+# Secrets and signing keys - never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+keystore.properties
+secrets.json
+secrets.yaml
+secrets.yml
+credentials.json
