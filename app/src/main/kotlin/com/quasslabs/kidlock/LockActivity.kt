@@ -32,6 +32,8 @@ import androidx.appcompat.app.AppCompatActivity
 class LockActivity : AppCompatActivity() {
 
     private var launched = false
+    /** Set once the PIN is accepted on Done. */
+    private var ending = false
     /** Endless decorative animations, paused while the screen is hidden behind the app. */
     private val loops = mutableListOf<ValueAnimator>()
     private val holds = mutableListOf<ValueAnimator>()
@@ -132,9 +134,23 @@ class LockActivity : AppCompatActivity() {
         holdToActivate(view, DONE_HOLD_MS, "Hold for Done", "#2E2A44", "#6C63A8") {
             KidLock.promptPin(this@LockActivity, "Enter PIN to unlock") {
                 KidLock.sessionEnding = true
+                ending = true
                 stopLockTask()
-                finish()
+                finishOnceUnlocked(0)
             }
+        }
+    }
+
+    /**
+     * stopLockTask() returns before Android has left lock task mode, and Android refuses to finish
+     * a task that is still locked. So wait for the mode to clear (up to 3 s), then finish.
+     */
+    private fun finishOnceUnlocked(attempt: Int) {
+        val state = getSystemService(ActivityManager::class.java).lockTaskModeState
+        if (state == ActivityManager.LOCK_TASK_MODE_NONE || attempt >= 30) {
+            finish()
+        } else {
+            handler.postDelayed({ finishOnceUnlocked(attempt + 1) }, 100)
         }
     }
 
@@ -239,6 +255,8 @@ class LockActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Done was confirmed: this screen is closing, so never start a new session from it.
+        if (ending) return
         setUpSwitchButton()
         val am = getSystemService(ActivityManager::class.java)
         if (am.lockTaskModeState == ActivityManager.LOCK_TASK_MODE_NONE) {
