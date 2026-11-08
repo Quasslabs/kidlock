@@ -2,24 +2,58 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#1E1B2E"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="32dp">
 
-    <Button
+    <!-- Big, bright, and gently pulsing: the button a child should press. -->
+    <TextView
         android:id="@+id/reopenButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:minWidth="200dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:minWidth="260dp"
+        android:paddingHorizontal="40dp"
+        android:paddingVertical="28dp"
         android:text="Back to app"
-        android:textSize="20sp" />
+        android:textColor="#FFFFFF"
+        android:textSize="28sp"
+        android:textStyle="bold" />
 
-    <Button
+    <!-- Hidden at the Little kid level. Switches apps inside the same locked session. -->
+    <TextView
+        android:id="@+id/switchButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:minWidth="220dp"
+        android:paddingHorizontal="28dp"
+        android:paddingVertical="18dp"
+        android:text="Switch app"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <!-- Small and muted: a parent holds it for a few seconds, then enters the PIN. -->
+    <TextView
         android:id="@+id/doneButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="64dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
         android:minWidth="200dp"
-        android:text="Done ✓"
-        android:textSize="20sp" />
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="14dp"
+        android:text="Hold for Done"
+        android:textColor="#B8B5C8"
+        android:textSize="16sp" />
 </LinearLayout>

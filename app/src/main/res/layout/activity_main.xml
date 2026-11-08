@@ -68,12 +68,21 @@
                 android:hint="Search"
                 android:inputType="text" />
 
-            <LinearLayout
-                android:id="@+id/appButtons"
+            <com.quasslabs.kidlock.ExpandedGridView
+                android:id="@+id/appGrid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:orientation="vertical" />
+                android:columnWidth="96dp"
+                android:numColumns="auto_fit"
+                android:stretchMode="columnWidth" />
+
+            <TextView
+                android:id="@+id/noAppsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No allowed apps are installed."
+                android:visibility="gone" />
 
             <Button
                 android:id="@+id/settingsButton"
@@ -98,6 +107,13 @@
                 android:text="Parent settings"
                 android:textSize="20sp"
                 android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/openAppButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Open an app (Play Store, Settings, anything)" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -130,6 +146,56 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="Block developer options and USB debugging (turn off before installing updates)" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Kid level"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="How a child moves between allowed apps. The phone stays locked to the allowed apps at every level; only Hold for Done plus your PIN ends a session." />
+
+            <RadioGroup
+                android:id="@+id/kidLevelGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <RadioButton
+                    android:id="@+id/levelLittle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Little kid: one app per session. Changing apps needs your PIN." />
+
+                <RadioButton
+                    android:id="@+id/levelBig"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Big kid: hold Switch app for 1 second to pick another allowed app." />
+
+                <RadioButton
+                    android:id="@+id/levelFree"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Free: tap Switch app to pick another allowed app." />
+            </RadioGroup>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/powerSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Power button opens Done: turning the screen off and on during a session shows Back to app and Done. Turn off to go straight back to the app; then Back is the only way to Done, and some games ignore it." />
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/homeSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="KidLock is the home screen: Home always comes back here, and the notification shade is blocked. Turn off to use the phone normally." />
 
             <TextView
                 android:layout_width="match_parent"

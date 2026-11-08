@@ -1,5 +1,6 @@
 package com.quasslabs.kidlock
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -11,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
@@ -26,18 +28,24 @@ class MainActivity : AppCompatActivity() {
     private lateinit var notOwnerSection: View
     private lateinit var launcherSection: View
     private lateinit var settingsSection: View
-    private lateinit var appButtons: LinearLayout
+    private lateinit var appGrid: ExpandedGridView
+    private lateinit var noAppsText: TextView
+    private var launcherAdapter: AppGridAdapter? = null
     private lateinit var appChecks: LinearLayout
     private lateinit var modeTotal: RadioButton
     private lateinit var modeLight: RadioButton
     private lateinit var debugSwitch: SwitchCompat
+    private lateinit var homeSwitch: SwitchCompat
+    private lateinit var powerSwitch: SwitchCompat
+    private lateinit var levelLittle: RadioButton
+    private lateinit var levelBig: RadioButton
+    private lateinit var levelFree: RadioButton
     private lateinit var pinField: EditText
     private lateinit var pinConfirmField: EditText
     private lateinit var launcherSearch: EditText
     private lateinit var appSearch: EditText
 
     private val checkBoxes = mutableMapOf<String, CheckBox>()
-    private val launchButtons = mutableMapOf<String, Button>()
     private var settingsUnlocked = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,16 +55,25 @@ class MainActivity : AppCompatActivity() {
         notOwnerSection = findViewById(R.id.notOwnerSection)
         launcherSection = findViewById(R.id.launcherSection)
         settingsSection = findViewById(R.id.settingsSection)
-        appButtons = findViewById(R.id.appButtons)
+        appGrid = findViewById(R.id.appGrid)
+        noAppsText = findViewById(R.id.noAppsText)
+        appGrid.setOnItemClickListener { _, _, position, _ ->
+            launcherAdapter?.let { LockActivity.start(this, it.getItem(position).packageName) }
+        }
         appChecks = findViewById(R.id.appChecks)
         modeTotal = findViewById(R.id.modeTotal)
         modeLight = findViewById(R.id.modeLight)
         debugSwitch = findViewById(R.id.debugSwitch)
+        homeSwitch = findViewById(R.id.homeSwitch)
+        powerSwitch = findViewById(R.id.powerSwitch)
+        levelLittle = findViewById(R.id.levelLittle)
+        levelBig = findViewById(R.id.levelBig)
+        levelFree = findViewById(R.id.levelFree)
         pinField = findViewById(R.id.pinField)
         pinConfirmField = findViewById(R.id.pinConfirmField)
         launcherSearch = findViewById(R.id.launcherSearch)
         appSearch = findViewById(R.id.appSearch)
-        launcherSearch.onTextChanged { filter(launchButtons, it) }
+        launcherSearch.onTextChanged { launcherAdapter?.filter(it) }
         appSearch.onTextChanged { filter(checkBoxes, it) }
 
         findViewById<TextView>(R.id.adbCommand).text =
@@ -69,11 +86,32 @@ class MainActivity : AppCompatActivity() {
             }
         }
         findViewById<Button>(R.id.applyButton).setOnClickListener { apply() }
+        findViewById<Button>(R.id.openAppButton).setOnClickListener { pickAppToOpen() }
+
+        // As the home screen, Back has nowhere to go; in parent settings it closes them.
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                when {
+                    settingsUnlocked -> { settingsUnlocked = false; render() }
+                    KidLock.isHomeScreen(this@MainActivity) -> Unit
+                    else -> finish()
+                }
+            }
+        })
         findViewById<Button>(R.id.removeOwnerButton).setOnClickListener { confirmRemoveOwner() }
     }
 
     override fun onResume() {
         super.onResume()
+        // Reached while a session is still running (for example the home intent after an allowed app
+        // exits): show the session screen instead of the launcher, so the session cannot be sidestepped.
+        // sessionEnding covers the moment after Done, before Android has finished leaving lock task mode.
+        val ending = KidLock.sessionEnding
+        KidLock.sessionEnding = false
+        if (!ending && KidLock.inSession(this)) {
+            LockActivity.bringToFront(this)
+            return
+        }
         render()
     }
 
@@ -97,23 +135,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderLauncher() {
-        appButtons.removeAllViews()
-        launchButtons.clear()
-        val allowed = KidLock.allowedPackages(this)
-        KidLock.launchableApps(this)
-            .filter { it.packageName in allowed }
-            .forEach { app ->
-                val button = Button(this).apply {
-                    text = app.label
-                    setOnClickListener { LockActivity.start(this@MainActivity, app.packageName) }
-                }
-                launchButtons[app.packageName] = button
-                appButtons.addView(button)
-            }
-        if (appButtons.childCount == 0) {
-            appButtons.addView(TextView(this).apply { text = "No allowed apps are installed." })
-        }
-        filter(launchButtons, launcherSearch.text.toString())
+        val adapter = AppGridAdapter(this, KidLock.allowedApps(this))
+        launcherAdapter = adapter
+        appGrid.adapter = adapter
+        noAppsText.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
+        adapter.filter(launcherSearch.text.toString())
     }
 
     private fun renderSettings() {
@@ -123,6 +149,13 @@ class MainActivity : AppCompatActivity() {
             Mode.LIGHT -> modeLight.isChecked = true
         }
         debugSwitch.isChecked = prefs.getBoolean(KidLock.KEY_BLOCK_DEBUGGING, true)
+        homeSwitch.isChecked = KidLock.isHomeScreen(this)
+        powerSwitch.isChecked = prefs.getBoolean(KidLock.KEY_POWER_EXIT, true)
+        when (KidLock.kidLevel(this)) {
+            KidLevel.LITTLE -> levelLittle.isChecked = true
+            KidLevel.BIG -> levelBig.isChecked = true
+            KidLevel.FREE -> levelFree.isChecked = true
+        }
 
         appChecks.removeAllViews()
         checkBoxes.clear()
@@ -164,9 +197,16 @@ class MainActivity : AppCompatActivity() {
 
         if (pin.isNotEmpty()) KidLock.setPin(this, pin)
         KidLock.setMode(this, if (modeLight.isChecked) Mode.LIGHT else Mode.TOTAL)
+        KidLock.setKidLevel(this, when {
+            levelFree.isChecked -> KidLevel.FREE
+            levelBig.isChecked -> KidLevel.BIG
+            else -> KidLevel.LITTLE
+        })
         val selected = checkBoxes.filterValues { it.isChecked }.keys
         KidLock.prefs(this).edit()
             .putBoolean(KidLock.KEY_BLOCK_DEBUGGING, debugSwitch.isChecked)
+            .putBoolean(KidLock.KEY_HOME_SCREEN, homeSwitch.isChecked)
+            .putBoolean(KidLock.KEY_POWER_EXIT, powerSwitch.isChecked)
             .putStringSet(KidLock.KEY_PACKAGES, selected)
             .apply()
         KidLock.applyPolicies(this)
@@ -176,6 +216,25 @@ class MainActivity : AppCompatActivity() {
         settingsUnlocked = false
         toast("Applied")
         render()
+    }
+
+    /**
+     * Parent escape hatch: opens any app outside a locked session, so the parent can use the
+     * Play Store or Settings without turning off the home screen. Home comes back to KidLock,
+     * and leaving this screen re-locks Parent settings behind the PIN. The app is kept out of
+     * Recents so the child cannot swipe back into it from the KidLock home screen.
+     */
+    private fun pickAppToOpen() {
+        val apps = KidLock.launchableApps(this)
+        AlertDialog.Builder(this)
+            .setTitle("Open an app")
+            .setItems(apps.map { it.label }.toTypedArray()) { _, which ->
+                packageManager.getLaunchIntentForPackage(apps[which].packageName)?.let {
+                    startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS))
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun confirmRemoveOwner() {

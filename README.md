@@ -4,7 +4,7 @@
 
 An Android Device Owner app that turns a spare phone into a locked-down device for a child. It does two jobs:
 
-1. **Pins approved apps** (any installed app you tick, such as YouTube Kids or Netflix) in lock task mode, so the child cannot leave the app. A PIN-protected **Done** button ends the session.
+1. **Pins approved apps** (any installed app you tick, such as YouTube Kids or Netflix) in lock task mode, so the child cannot leave the app. Holding **Done** for a few seconds, then entering the PIN, ends the session.
 2. **Takes away the phone part of the phone**, in **Total lockdown** mode: no calls, no texts, no SIM. Wi-Fi keeps working, because the streaming apps need it.
 
 Kotlin, standard Views, `androidx.appcompat` only. No network code, no analytics. minSdk 26, targetSdk 34.
@@ -114,11 +114,15 @@ To install an update later: enter **Parent settings**, turn off **Block develope
 
 ## Daily use
 
-- Open KidLock: it shows a button for each allowed app, with a search box to find one quickly.
+- Open KidLock: it shows the allowed apps as an icon grid, with a search box to find one quickly.
 - Tapping one starts a locked session. Home, Recents, and the power menu are disabled; the child stays in that app.
-- Backing out of the app lands on the KidLock lock screen, with **Back to app** and **Done ✓**.
-- **Done ✓** asks for the PIN, then ends the session.
+- Backing out of the app lands on the KidLock lock screen, with a big, colorful **Back to app** and a small **Hold for Done**.
+- **Hold for Done** needs a 3-second press, then the PIN, then ends the session. A quick tap does nothing.
+- **Kid level** (Parent settings, separate from Total/Light): **Little kid** stays in one app per session. **Big kid** gets a **Switch app** button on the session screen; holding it for 1 second opens a grid of the allowed apps. **Free** opens that grid with a plain tap. The phone stays locked to the allowed apps at every level, and only Hold for Done plus the PIN ends a session.
+- **Power button:** turning the screen off and back on during a session also brings up **Back to app** and **Hold for Done**. Use it when an app (many games) ignores Back. A Parent settings switch turns this off.
 - **Parent settings** on the main screen also asks for the PIN.
+- **KidLock as the home screen** (Parent settings switch): Home always returns to "Pick an app", so allowed apps can only be started locked, and the notification shade is blocked. Android only allows blocking the shade on a phone with no PIN or pattern screen lock.
+- **Open an app** in Parent settings opens any app, such as the Play Store or Settings, without a lock, so a parent can install things without turning the home screen off. Home brings the phone back to KidLock.
 - After 5 wrong PINs, entry locks for 30 seconds, doubling with each further miss up to an hour.
 
 ## How it works
@@ -142,10 +146,10 @@ Policy calls:
 ## Limitations worth knowing
 
 - **Emergency calls always work.** Android lets them through without a SIM and regardless of any restriction. No app can change that, and KidLock does not try.
-- **Outside a session the phone is a normal phone, minus the restrictions above.** Lock task only applies while an app is pinned. Between sessions the child can open other installed apps and most of Settings, including Wi-Fi. Uninstall or disable apps you do not want reachable.
+- **Outside a session, and without the home screen switch, the phone is a normal phone, minus the restrictions above.** Lock task only applies while an app is pinned. Between sessions the child can open other installed apps and most of Settings, including Wi-Fi. Uninstall or disable apps you do not want reachable.
 - **A forced reboot ends the session.** Holding the power button long enough still restarts most phones, and the phone comes back up outside lock task. The restrictions survive the reboot; the pinned session does not.
 - **Recovery mode.** `DISALLOW_FACTORY_RESET` blocks the reset in Settings. A reset from the recovery menu cannot be blocked by any app; it also removes KidLock along with everything else.
-- **No floating overlay.** The Done button lives on the KidLock lock screen behind the pinned app, reached with Back, instead of floating over it. A floating button would need the "Display over other apps" permission plus a foreground service, which Device Owner cannot grant automatically.
+- **No floating overlay.** The Done button lives on the KidLock lock screen behind the pinned app, reached with Back or the power button, instead of floating over it. A floating button would need the "Display over other apps" permission plus a foreground service, which Device Owner cannot grant automatically.
 - **Choose allowed apps carefully.** Any app with a home-screen icon can be allowed. Skip Play Store, Chrome, and Settings: from inside them a child can open almost anything else, and the session would no longer mean much.
 
 ## Removing Device Owner
