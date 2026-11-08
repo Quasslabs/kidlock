@@ -9,6 +9,8 @@ An Android Device Owner app that turns a spare phone into a locked-down device f
 
 Kotlin, standard Views, `androidx.appcompat` only. No network code, no analytics. minSdk 26, targetSdk 34.
 
+**Privacy:** KidLock has no network code; nothing leaves the phone. It does not request the internet permission, collects no data, and keeps its settings and the salted PIN hash in the app's private storage on the device.
+
 ## Two modes
 
 KidLock ships with **Total lockdown** as the default. **Light** is one tap away in Parent settings. If neither fits, there is also a no-install option below.
@@ -82,6 +84,28 @@ Locking airplane mode ON was the original idea. Android cannot do it: the only r
 
 The APK lands at `app/build/outputs/apk/debug/app-debug.apk`. Android Studio can also open the folder directly.
 
+### Release build
+
+A debug APK is signed with a key that only exists on the computer that built it, so a phone set up from it can only be updated from that same computer. For a phone you will keep updating, install a release build signed with your own key.
+
+1. Create a key once, and keep it (and its password) somewhere safe. Losing it means a phone set up with it can only get a new version after removing Device Owner and uninstalling KidLock.
+   ```bash
+   keytool -genkeypair -v -keystore kidlock-release.jks -storetype PKCS12 -alias kidlock -keyalg RSA -keysize 4096 -validity 10000
+   ```
+   Keep the `.jks` file outside the repository. `.gitignore` also excludes `*.jks` as a backstop.
+2. Point the build at it, in `local.properties` (not committed) or as environment variables:
+   ```properties
+   kidlock.keystore=C:/path/to/kidlock-release.jks
+   kidlock.keystore.password=your-password
+   kidlock.key.alias=kidlock
+   ```
+   The environment variable names are `KIDLOCK_KEYSTORE`, `KIDLOCK_KEYSTORE_PASSWORD`, and `KIDLOCK_KEY_ALIAS`. Use the same password for the store and the key.
+3. Build:
+   ```bash
+   ./gradlew assembleRelease
+   ```
+   The signed APK lands at `app/build/outputs/apk/release/app-release.apk`. Without the signing values, Gradle produces `app-release-unsigned.apk`, which Android will not install.
+
 ## Setup
 
 ### Before you start: sign out, then sign back in
@@ -97,9 +121,9 @@ Android only lets an app become Device Owner while **no accounts are signed in**
 
 ### Steps
 
-1. Enable Developer options and USB debugging on the phone, then install the APK:
+1. Enable Developer options and USB debugging on the phone, then install the APK (the release build if you plan to install updates later, see [Release build](#release-build)):
    ```bash
-   adb install app/build/outputs/apk/debug/app-debug.apk
+   adb install app/build/outputs/apk/release/app-release.apk
    ```
 2. Make KidLock the Device Owner:
    ```bash
@@ -110,7 +134,18 @@ Android only lets an app become Device Owner while **no accounts are signed in**
 5. For Total lockdown, pull the SIM card.
 6. Hand it over.
 
-To install an update later: enter **Parent settings**, turn off **Block developer options**, tap **Apply**, re-enable USB debugging, and run `adb install -r` with the new APK. Updates must be signed with the same key as the installed build, so build them on the same computer or set up a release signing key.
+To install an update later:
+
+1. Enter **Parent settings**, turn off **Block developer options**, and tap **Apply**.
+2. Re-enable USB debugging and connect the phone.
+3. Build the new version with the same release key as the installed one, and install it over the top:
+   ```bash
+   ./gradlew assembleRelease
+   adb install -r app/build/outputs/apk/release/app-release.apk
+   ```
+4. Turn **Block developer options** back on and tap **Apply**.
+
+Android only accepts an update signed with the same key as the installed build. A phone set up from a debug APK can only be updated by a debug build from the same computer; to move it to the release key, remove Device Owner, uninstall, and set it up again from the release APK.
 
 ## Daily use
 
@@ -150,6 +185,8 @@ Policy calls:
 - **A forced reboot ends the session.** Holding the power button long enough still restarts most phones, and the phone comes back up outside lock task. The restrictions survive the reboot; the pinned session does not.
 - **Recovery mode.** `DISALLOW_FACTORY_RESET` blocks the reset in Settings. A reset from the recovery menu cannot be blocked by any app; it also removes KidLock along with everything else.
 - **No floating overlay.** The Done button lives on the KidLock lock screen behind the pinned app, reached with Back or the power button, instead of floating over it. A floating button would need the "Display over other apps" permission plus a foreground service, which Device Owner cannot grant automatically.
+- **The power-button return needs KidLock running.** Android only delivers the screen-on signal to an app whose process is alive. If the phone runs very low on memory during a session and closes KidLock in the background, turning the screen off and on goes straight back to the app until the next session; Back still reaches the session screen in apps that honor it.
+- **Hold buttons are touch only.** Hold for Done and the Big kid Switch app button need a press held on the screen. Screen readers such as TalkBack cannot activate them.
 - **Choose allowed apps carefully.** Any app with a home-screen icon can be allowed. Skip Play Store, Chrome, and Settings: from inside them a child can open almost anything else, and the session would no longer mean much.
 
 ## Removing Device Owner
