@@ -6,3 +6,6 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+*.jks
+*.keystore
+*.p12
