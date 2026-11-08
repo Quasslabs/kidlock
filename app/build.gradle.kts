@@ -20,6 +20,9 @@ fun signingValue(env: String, prop: String): String? =
 val releaseKeystore = signingValue("KIDLOCK_KEYSTORE", "kidlock.keystore")
 val releasePassword = signingValue("KIDLOCK_KEYSTORE_PASSWORD", "kidlock.keystore.password")
 val releaseAlias = signingValue("KIDLOCK_KEY_ALIAS", "kidlock.key.alias") ?: "kidlock"
+if ((releaseKeystore == null) != (releasePassword == null)) {
+    logger.warn("KidLock: only one of the keystore path and password is set, so the release build will be unsigned.")
+}
 
 android {
     namespace = "com.quasslabs.kidlock"

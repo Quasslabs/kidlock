@@ -69,7 +69,7 @@ This is the right choice if all you want is "stay in this one app for a while."
 
 ### Fine-tuning
 
-- **USB debugging:** **Block developer options** in Parent settings is on by default in both modes. Turn it off to install updates.
+- **USB debugging:** **Block developer options** in Parent settings is on by default in both modes. Turn it off to install updates, and back on afterwards: while it is off, anyone with a computer and a USB cable can end a session without the PIN.
 - **Fewer protections:** the anti-tamper set lives in `BASE_RESTRICTIONS` in `KidLockApp.kt`. Removing entries is possible, but without the factory reset block the child can wipe the phone and remove KidLock entirely.
 
 ## Why not airplane mode?
@@ -156,7 +156,7 @@ Android only accepts an update signed with the same key as the installed build. 
 - **Kid level** (Parent settings, separate from Total/Light): **Little kid** stays in one app per session. **Big kid** gets a **Switch app** button on the session screen; holding it for 1 second opens a grid of the allowed apps. **Free** opens that grid with a plain tap. The phone stays locked to the allowed apps at every level, and only Hold for Done plus the PIN ends a session.
 - **Power button:** turning the screen off and back on during a session also brings up **Back to app** and **Hold for Done**. Use it when an app (many games) ignores Back. A Parent settings switch turns this off.
 - **Parent settings** on the main screen also asks for the PIN.
-- **KidLock as the home screen** (Parent settings switch): Home always returns to "Pick an app", so allowed apps can only be started locked, and the notification shade is blocked. Android only allows blocking the shade on a phone with no PIN or pattern screen lock.
+- **KidLock as the home screen** (Parent settings switch): Home always returns to "Pick an app", and the notification shade is blocked. Android only allows blocking the shade on a phone with no PIN or pattern screen lock. Recents (the app switcher) still works between sessions, so see the limitation below.
 - **Open an app** in Parent settings opens any app, such as the Play Store or Settings, without a lock, so a parent can install things without turning the home screen off. Home brings the phone back to KidLock.
 - After 5 wrong PINs, entry locks for 30 seconds, doubling with each further miss up to an hour.
 
@@ -182,6 +182,7 @@ Policy calls:
 
 - **Emergency calls always work.** Android lets them through without a SIM and regardless of any restriction. No app can change that, and KidLock does not try.
 - **Outside a session, and without the home screen switch, the phone is a normal phone, minus the restrictions above.** Lock task only applies while an app is pinned. Between sessions the child can open other installed apps and most of Settings, including Wi-Fi. Uninstall or disable apps you do not want reachable.
+- **Recents still works between sessions, even with the home screen switch on.** Android only turns off Recents inside a session. After Done, the apps used in the session (and anything opened earlier) stay in Recents, and opening one from there starts it without a lock. Clear Recents before handing the phone back, or keep it in a session.
 - **A forced reboot ends the session.** Holding the power button long enough still restarts most phones, and the phone comes back up outside lock task. The restrictions survive the reboot; the pinned session does not.
 - **Recovery mode.** `DISALLOW_FACTORY_RESET` blocks the reset in Settings. A reset from the recovery menu cannot be blocked by any app; it also removes KidLock along with everything else.
 - **No floating overlay.** The Done button lives on the KidLock lock screen behind the pinned app, reached with Back or the power button, instead of floating over it. A floating button would need the "Display over other apps" permission plus a foreground service, which Device Owner cannot grant automatically.

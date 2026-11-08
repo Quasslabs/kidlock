@@ -166,8 +166,9 @@ object KidLock {
     fun isHomeScreen(context: Context) = prefs(context).getBoolean(KEY_HOME_SCREEN, false)
 
     /**
-     * Makes KidLock the phone's home screen, so Home always returns to "Pick an app" and the
-     * child can only start allowed apps, always locked. Also stops the notification shade from
+     * Makes KidLock the phone's home screen, so Home always returns to "Pick an app", where every
+     * app starts locked. Recents still works between sessions; Android only disables it inside a
+     * session (see the README limitations). Also stops the notification shade from
      * being pulled down, since its Settings gear would otherwise open the whole phone.
      * The HOME intent filter lives on a disabled alias, so a phone without this setting never
      * offers KidLock as a launcher.
