@@ -136,6 +136,7 @@ class LockActivity : AppCompatActivity() {
                 KidLock.sessionEnding = true
                 ending = true
                 stopLockTask()
+                KidLock.ensureSessionEnds(this@LockActivity)
                 finishOnceUnlocked(0)
             }
         }
@@ -272,6 +273,7 @@ class LockActivity : AppCompatActivity() {
                 return
             }
             KidLock.sessionEnding = false
+            KidLock.sessionCount++
             startLockTask()
         }
         if (!launched) {

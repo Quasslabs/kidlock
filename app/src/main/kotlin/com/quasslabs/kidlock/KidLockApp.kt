@@ -12,6 +12,8 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.UserManager
 import android.text.InputType
 import android.widget.EditText
@@ -161,6 +163,35 @@ object KidLock {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             dpm.setLockTaskFeatures(admin, DevicePolicyManager.LOCK_TASK_FEATURE_NONE)
         }
+    }
+
+    /** Counts sessions, so a check scheduled for one session never touches the next. */
+    @Volatile var sessionCount = 0
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    /**
+     * Call right after stopLockTask() on Done. If the phone is still locked a second later, the stop
+     * was ignored, so force the session to end. That happens when KidLock's process died while the
+     * session screen was in front: Android keeps the dead, empty task as the root of the session and
+     * ignores stop requests from the session screen that replaced it (and closes that screen).
+     * The check runs here, not in the activity, because the activity may already be gone.
+     */
+    fun ensureSessionEnds(context: Context) {
+        val app = context.applicationContext
+        val session = sessionCount
+        mainHandler.postDelayed({
+            if (session == sessionCount && inSession(app)) forceEndSession(app)
+        }, 1000)
+    }
+
+    /**
+     * Emptying the allowlist makes Android drop every locked task and leave lock task mode;
+     * then the allowlist is restored.
+     */
+    private fun forceEndSession(context: Context) {
+        if (!isDeviceOwner(context)) return
+        dpm(context).setLockTaskPackages(admin(context), emptyArray())
+        applyPolicies(context)
     }
 
     fun isHomeScreen(context: Context) = prefs(context).getBoolean(KEY_HOME_SCREEN, false)
